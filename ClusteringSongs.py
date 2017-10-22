@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[17]:
+# In[29]:
 
 import json
 import numpy as np
@@ -30,7 +30,7 @@ from bokeh.models import WheelZoomTool
 from bokeh.models import PanTool
 
 
-# In[18]:
+# In[30]:
 
 file  = open("ranking.json", "r")
 text = file.read()
@@ -40,19 +40,20 @@ metal = file.read()
 #print(text)
 
 
-# In[19]:
+# In[31]:
 
 parsed_text = json.loads(text)
 metal_data = json.loads(metal)
 
 
-# In[20]:
+# In[32]:
 
-print(parsed_text['objects'][0])
-print(len(parsed_text['objects']))
+number = 1
+for i in range(0, 10):
+    print(parsed_text['objects'][i]['word'], "\t\t", parsed_text['objects'][i]['rank'])
 
 
-# In[21]:
+# In[33]:
 
 def stemStepA(word):
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
@@ -76,7 +77,7 @@ def stemStepA(word):
     return word    
 
 
-# In[22]:
+# In[34]:
 
 def firstNonVowelIndex(word):
     
@@ -92,7 +93,7 @@ def firstNonVowelIndex(word):
     return index
 
 
-# In[23]:
+# In[35]:
 
 def rootHasVowel(word, endingIndex):
     
@@ -107,7 +108,7 @@ def rootHasVowel(word, endingIndex):
     return False
 
 
-# In[24]:
+# In[36]:
 
 def stemStepB(word):
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
@@ -211,7 +212,7 @@ def stemStepB(word):
     return word
 
 
-# In[25]:
+# In[37]:
 
 def stem(word):
     word = stemStepA(word)
@@ -219,9 +220,9 @@ def stem(word):
     return word
 
 
-# In[26]:
+# In[38]:
 
-def findWords(metal_data):
+def findUniqueWords(metal_data):
     uniqueWords = []
 
     for band in metal_data.keys():
@@ -231,137 +232,146 @@ def findWords(metal_data):
                 wordsInSong = lyrics.split(" ")
                 for w in wordsInSong:
                     if w != '':
-                        if w not in uniqueWords:
+                        if stem(w.lower()) not in uniqueWords:
                             uniqueWords.append(stem(w.lower()))
+
             
     return uniqueWords
 
 
-# In[27]:
+# In[39]:
 
-def getGoogleTwitterNYRanks(metal_data, parsed_text):
-    uniqueWords = findWords(metal_data)
-    word_google_twitter_ny = {}
+def createSongToWordsDict(metal_data):
+    songsToWords = {}
     
-    for word in uniqueWords:
-        for i in range(0, len(parsed_text['objects'])):
-            if parsed_text['objects'][i]['word'] == word:
-                if word not in word_google_twitter_ny.keys():
-                    word_google_twitter_ny[word] = (parsed_text['objects'][i]['googleBooksRank'], parsed_text['objects'][i]['twitterRank'], parsed_text['objects'][i]['newYorkTimesRank'])                  
+    for band in metal_data.keys():
+        for album in metal_data[band].keys():
+            for song in metal_data[band][album].keys():
                 
+                songsToWords[song] = {}
+                
+                lyrics = metal_data[band][album][song]
+                wordsInSong = lyrics.split(" ")
+                for w in wordsInSong:
+                    if w != '':
+                        if songsToWords[song].keys == None:
+                            songsToWords[song][stem(w.lower())] = 1
+                        if stem(w.lower()) not in songsToWords[song].keys():
+                            songsToWords[song][stem(w.lower())] = 1 
+                        else:#if stem(w.lower()) in songsToWord[song].keys()
+                            songsToWords[song][stem(w.lower())] += 1
+                            
+    return songsToWords                
+
+
+# In[40]:
+
+def createPair(songsToWords, wordX, wordY):
+    pairs = []
     
-    return word_google_twitter_ny
-
-
-
-# In[30]:
-
-def buildScatterPlot(word_google_twitter_ny):
-    googleRanks = []
-    twitterRanks = []
-    
-    for word in word_google_twitter_ny.keys():
-        googleRanks.append(word_google_twitter_ny[word][0])
-        twitterRanks.append(word_google_twitter_ny[word][1])
-
-    p = figure(plot_width=800, plot_height=800)
-    p.outline_line_width = 7
-    p.outline_line_alpha = 0.3
-    p.outline_line_color = "navy"
-    p.circle(googleRanks, twitterRanks, size=3)
-    return p
-
-
-# In[66]:
-
-def createPair(word_google_twitter_ny):
-    xyValPairs = []
-    
-    for word in word_google_twitter_ny.keys():
+    for song in songsToWords.keys():
         onePair = []
-        xRank = int(word_google_twitter_ny[word][0])
-        yRank =int(word_google_twitter_ny[word][1])
-        onePair.append(xRank)
-        onePair.append(yRank)
-        xyValPairs.append(onePair)        
         
-    return xyValPairs
+        if wordX not in songsToWords[song].keys():
+            onePair.append(0)
+        else:
+            onePair.append(songsToWords[song][wordX])
+            
+            
+        if wordY not in songsToWords[song].keys():
+            onePair.append(0)
+        else:
+            onePair.append(songsToWords[song][wordY])
+        
+        pairs.append(onePair)
+        
+    return pairs, np.array(pairs)
 
 
+# In[41]:
 
-# In[83]:
+def findPairCounts(X):
+    uniquePairs = {}
+    
+    for pair in X:
+        if (pair[0], pair[1]) in uniquePairs.keys():
+            uniquePairs[(pair[0], pair[1])] += 1
+        else:
+            uniquePairs[(pair[0], pair[1])] = 1
+            
+    return uniquePairs
 
-def buildKMeansScatterPlot(word_google_twitter_ny, kValue):
-    X = createPair(word_google_twitter_ny)
+
+# In[42]:
+
+def buildSongKMeansPlot(songsToWords, wordX, wordY, kValue):
+    pairs, X = createPair(songsToWords, wordX, wordY)
+    
+    pairCounts= findPairCounts(pairs)
+    print(pairCounts)
     
     kmeans = KMeans(n_clusters=kValue, random_state=0).fit(X)
     print("kmeans.labels_ = ",kmeans.labels_)
     print("len(kmeans.labels_) = ", len(kmeans.labels_))
     
-    hover = HoverTool(
-        tooltips=[
-            ("index", "$word[word.keys()[index]]"),
-            ("googleRank", "$x"),
-            ("twitterRank", "$y")
-        ]
-    )
-
     print("making figure")
-    p = figure(plot_width=800, plot_height=800,  tools=[hover, PanTool(), BoxZoomTool(), WheelZoomTool()])                    
-
+    p = figure(plot_width=800, plot_height=800, title= wordX + " vs " + wordY,  tools=[PanTool(), BoxZoomTool(), WheelZoomTool()])                    
+    
     print("making points")
     for i in range(0, len(X)):
         if kmeans.labels_[i] == 0:
-            print("did for 0 at ", i)
-            p.circle(X[i][0], X[i][1], size=3, line_color="green", fill_color="green", fill_alpha=0.5)     
+            #print("did for 0 at ", i)
+            p.circle(X[i][0], X[i][1], size=5, line_color="green", fill_color="green", fill_alpha=0.5)     
         elif kmeans.labels_[i] == 1:
-            print("did for 1 at ", i)
-            p.triangle(X[i][0], X[i][1], size=3, line_color="blue", fill_color="blue", fill_alpha=0.5)
+            #print("did for 1 at ", i)
+            p.triangle(X[i][0], X[i][1], size=5, line_color="blue", fill_color="blue", fill_alpha=0.5)
         elif kmeans.labels_[i] == 2:
-            print("did for 2 at ", i)
-            p.square(X[i][0], X[i][1], size=3, line_color="red", fill_color="red", fill_alpha=0.5)
+            #print("did for 2 at ", i)
+            p.square(X[i][0], X[i][1], size=5, line_color="red", fill_color="red", fill_alpha=0.5)
         elif kmeans.labels_[i] == 3:
-            print("did for 3 at ", i)
-            p.circle(X[i][0], X[i][1], size=3, line_color="blue", fill_color="blue", fill_alpha=0.5)     
+            #print("did for 3 at ", i)
+            p.circle(X[i][0], X[i][1], size=5, line_color="blue", fill_color="blue", fill_alpha=0.5)     
         elif kmeans.labels_[i] == 4:
-            print("did for 4 at ", i)
-            p.triangle(X[i][0], X[i][1], size=3, line_color="red", fill_color="red", fill_alpha=0.5)
+            #print("did for 4 at ", i)
+            p.triangle(X[i][0], X[i][1], size=5, line_color="red", fill_color="red", fill_alpha=0.5)
         elif kmeans.labels_[i] == 5:
-            print("did for 5 at ", i)
-            p.square(X[i][0], X[i][1], size=3, line_color="green", fill_color="green", fill_alpha=0.5)
+            #print("did for 5 at ", i)
+            p.square(X[i][0], X[i][1], size=5, line_color="green", fill_color="green", fill_alpha=0.5)
         elif kmeans.labels_[i] == 6:
-            print("did for 6 at ", i)
-            p.circle(X[i][0], X[i][1], size=3, line_color="red", fill_color="red", fill_alpha=0.5)     
+            #print("did for 6 at ", i)
+            p.circle(X[i][0], X[i][1], size=5, line_color="red", fill_color="red", fill_alpha=0.5)     
         elif kmeans.labels_[i] == 7:
-            print("did for 7 at ", i)
-            p.triangle(X[i][0], X[i][1], size=3, line_color="green", fill_color="green", fill_alpha=0.5)
+            #print("did for 7 at ", i)
+            p.triangle(X[i][0], X[i][1], size=5, line_color="green", fill_color="green", fill_alpha=0.5)
         elif kmeans.labels_[i] == 8:
-            print("did for 8 at ", i)
-            p.square(X[i][0], X[i][1], size=3, line_color="blue", fill_color="blue", fill_alpha=0.5)
+            #print("did for 8 at ", i)
+            p.square(X[i][0], X[i][1], size=5, line_color="blue", fill_color="blue", fill_alpha=0.5)
         elif kmeans.labels_[i] == 9:
-            print("did for 9 at ", i)
-            p.circle(X[i][0], X[i][1], size=3, line_color="black", fill_color="white", fill_alpha=0.5)     
+            #print("did for 9 at ", i)
+            p.circle(X[i][0], X[i][1], size=5, line_color="black", fill_color="white", fill_alpha=0.5)     
         elif kmeans.labels_[i] == 10:
-            print("did for 10 at ", i)
-            p.triangle(X[i][0], X[i][1], size=3, line_color="black", fill_color="white", fill_alpha=0.5)
-    
-    #p.xaxis.axis_label = "Google Ranks"
-    #p.yaxis.axis_label = "Twitter Ranks"
+            #print("did for 10 at ", i)
+            p.triangle(X[i][0], X[i][1], size=5, line_color="black", fill_color="white", fill_alpha=0.5)
     
     print("showing plot")
     return p
 
 
-# In[86]:
-word_google_twitter_ny = getGoogleTwitterNYRanks(metal_data, parsed_text)  
+# In[43]:
 
-temp = {}
-for word in word_google_twitter_ny.keys():
-    temp[word] = (word_google_twitter_ny[word][0], word_google_twitter_ny[word][1])
-        
-scatterPlot = buildScatterPlot(temp)
-kMeansScatterPlot = buildKMeansScatterPlot(temp, 2)
+uniqueWords = findUniqueWords(metal_data)
+print("len(uniqueWords) = ", len(uniqueWords))
+songsToWords = createSongToWordsDict(metal_data)
+print(len(songsToWords))
+#print(songsToWords)
 
+
+# In[44]:
+
+songKMeansPlot = buildSongKMeansPlot(songsToWords, "every", "death", 2)
+
+
+# In[45]:
 
 #Selections and Sliders
 k_slider = Slider(title="Number of Neighbors",
@@ -372,111 +382,41 @@ k_slider = Slider(title="Number of Neighbors",
                          width=200)
 
 XData_select = Select(title = "XData",
-                      value = "Google",
+                      value = "every",
                       width=200,
-                      options = ["Google", "Twitter", "New York"])
+                      options = uniqueWords)
 
 
 YData_select = Select(title = "YData",
-                      value = "Twitter",
+                      value = "death",
                       width=200,
-                      options = ["Google", "Twitter", "New York"])
+                      options = uniqueWords)
 
+
+# In[46]:
 
 #Functionality of Slider
 def update(attrname, old, new):
     currK = int(k_slider.value)
     currX = XData_select.value
     currY = YData_select.value
-    x_index = -1
-    y_index = -1
     
-    if currX == "Google":
-        x_index = 0
-    elif currX == "Twitter":
-        x_index = 1
-    else:
-        x_index = 2
-        
-    if currY == "Google":
-        y_index = 0
-    elif currY == "Twitter":
-        y_index = 1
-    else:
-        y_index = 2
-        
-    temp = {}
-    for word in word_google_twitter_ny.keys():
-        temp[word] = (word_google_twitter_ny[word][x_index], word_google_twitter_ny[word][y_index])
-        
-    scatterPlot = buildScatterPlot(temp)
-    kMeansScatterPlot = buildKMeansScatterPlot(temp, currK)
+    songKMeansPlot = buildSongKMeansPlot(songsToWords, currX, currY, currK)
     
+    layout.children[1] = songKMeansPlot
 
-    layout.children[1] = scatterPlot
-    layout.children[2] = kMeansScatterPlot
-    
-    
-def updateXYData():
-    currK = int(k_slider.value)
-    currX = XData_select.value
-    currY = YData_select.value
-    
-    if currX == "Google":
-        x_index = 0
-    elif currX == "Twitter":
-        x_index == 1
-    else:
-        x_index == 2
-        
-    if currY == "Google":
-        y_index = 0
-    elif currY == "Twitter":
-        y_index == 1
-    else:
-        y_index == 2
-    
-    temp = {}
-    for word in word_google_twitter_ny.keys():
-        temp[word] = (word_google_twitter_ny[word][x_index], word_google_twitter_ny[word][x_index])
-    
-    scatterPlot = buildScatterPlot(temp)
-    kMeansScatterPlot = buildKMeansScatterPlot(temp, currK)
-    
-    layout.children[1] = scatterPlot
-    layout.children[2] = kMeansScatterPlot
-    
 
+# In[47]:
 
 k_slider.on_change('value', update)
 XData_select.on_change('value', update)
 YData_select.on_change('value', update)
 
 
+# In[48]:
+
 inputs = column(widgetbox(k_slider, XData_select, YData_select))
-layout = row(inputs, scatterPlot, kMeansScatterPlot)
+layout = row(inputs, songKMeansPlot)
 curdoc().add_root(layout)
-curdoc().title = "Google VS Twitter"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+curdoc().title = "Clustering Songs Based on # of Wordds"
 
