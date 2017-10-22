@@ -273,6 +273,15 @@ def getSongHappiness(metal_data, parsed_text, artist, album, song):
     
     return word_happiness
 
+def getSongList():
+    songList = []
+    for band in metal_data.keys():
+        for album in metal_data[band].keys():
+            for song in metal_data[band][album].keys():
+                songList.append("{} | {} | {}".format(song,album,band))
+    return songList
+
+
 def buildScatterPlot(word_happiness):
     wordList = []
     wordHappiness = []
@@ -293,13 +302,28 @@ def buildScatterPlot(word_happiness):
     p = figure(plot_width=800, plot_height=800, tools = [hover])
    
     p.outline_line_width = 13
-    p.outline_line_alpha = 0.3
+    p.outline_line_alpha = 0.3  
     p.outline_line_color = "navy"
-    p.circle('x', 'y', source = source, size=6)
+    p.line('x', 'y', source = source)
     return p
 
 
+songSelect = Select(title = "Song",
+                      value = "theSong",
+                      width=200,
+                      options = getSongList())
 
+
+def update(attrname, old, new):
+    currK = songSelect.value.split(' | ')
+    print(currK)
+    words1 = getSongHappiness(metal_data, parsed_text, currK[2], currK[1], currK[0])
+    scatterPlot1 = buildScatterPlot(words1)
+    layout.children[1] = scatterPlot1
+
+
+
+songSelect.on_change('value', update)
 
 
 words = getSongHappiness(metal_data, parsed_text, 'gojira', 'terraincognita', 'Clone')
@@ -307,4 +331,7 @@ print(words)
 print('-----------------------------')
 
 scatterPlot = buildScatterPlot(words)
-show(scatterPlot)
+inputs = column(widgetbox( songSelect))
+layout = row(inputs, scatterPlot)
+curdoc().add_root(layout)
+curdoc().title = "SongVis"
