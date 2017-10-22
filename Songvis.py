@@ -299,12 +299,20 @@ def buildScatterPlot(word_happiness):
             ("word", "@labels"),
             ]
         )
+
+###### attempt at regresssion line\
+    regression = np.polyfit(source.data['x'], source.data['y'], 1)
+    r_x, r_y = zip(*((i, i*regression[0] + regression[1]) for i in range(len(source.data['x']))))
+    source.add(r_x, 'r_x')
+    source.add(r_y, 'r_y')
+
     p = figure(plot_width=800, plot_height=800, tools = [hover])
    
     p.outline_line_width = 13
     p.outline_line_alpha = 0.3  
     p.outline_line_color = "navy"
     p.line('x', 'y', source = source)
+    p.line('r_x', 'r_y', source = source, color = 'red')
     return p
 
 
