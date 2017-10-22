@@ -307,7 +307,7 @@ def buildKMeansScatterPlot(word_google_twitter_ny, kValue):
     )
 
     print("making figure")
-    p = figure(plot_width=800, plot_height=800, title= "GoogleRank vs TwitterRank",  tools=[hover, PanTool(), BoxZoomTool(), WheelZoomTool()])                    
+    p = figure(plot_width=800, plot_height=800,  tools=[hover, PanTool(), BoxZoomTool(), WheelZoomTool()])                    
 
     print("making points")
     for i in range(0, len(X)):
@@ -345,17 +345,22 @@ def buildKMeansScatterPlot(word_google_twitter_ny, kValue):
             print("did for 10 at ", i)
             p.triangle(X[i][0], X[i][1], size=3, line_color="black", fill_color="white", fill_alpha=0.5)
     
-    p.xaxis.axis_label = "Google Ranks"
-    p.yaxis.axis_label = "Twitter Ranks"
+    #p.xaxis.axis_label = "Google Ranks"
+    #p.yaxis.axis_label = "Twitter Ranks"
     
     print("showing plot")
     return p
 
 
 # In[86]:
-word_google_twitter_ny = getGoogleTwitterNYRanks(metal_data, parsed_text)        
-scatterPlot = buildScatterPlot(word_google_twitter_ny)
-kMeansScatterPlot = buildKMeansScatterPlot(word_google_twitter_ny, 2)
+word_google_twitter_ny = getGoogleTwitterNYRanks(metal_data, parsed_text)  
+
+temp = {}
+for word in word_google_twitter_ny.keys():
+    temp[word] = (word_google_twitter_ny[word][0], word_google_twitter_ny[word][1])
+        
+scatterPlot = buildScatterPlot(temp)
+kMeansScatterPlot = buildKMeansScatterPlot(temp, 2)
 
 
 #Selections and Sliders
@@ -367,34 +372,86 @@ k_slider = Slider(title="Number of Neighbors",
                          width=200)
 
 XData_select = Select(title = "XData",
-                      value = "GROUP_SUGARYBEVG_TOTAL_GRAMS",
+                      value = "Google",
                       width=200,
                       options = ["Google", "Twitter", "New York"])
 
 
 YData_select = Select(title = "YData",
-                      value = "GROUP_SUGARYBEVG_TOTAL_FREQUENCY",
+                      value = "Twitter",
                       width=200,
                       options = ["Google", "Twitter", "New York"])
 
 
 #Functionality of Slider
-def update_k(attrname, old, new):
+def update(attrname, old, new):
     currK = int(k_slider.value)
-    kMeansScatterPlot = buildKMeansScatterPlot(word_google_twitter_ny, currK)
+    currX = XData_select.value
+    currY = YData_select.value
+    x_index = -1
+    y_index = -1
+    
+    if currX == "Google":
+        x_index = 0
+    elif currX == "Twitter":
+        x_index = 1
+    else:
+        x_index = 2
+        
+    if currY == "Google":
+        y_index = 0
+    elif currY == "Twitter":
+        y_index = 1
+    else:
+        y_index = 2
+        
+    temp = {}
+    for word in word_google_twitter_ny.keys():
+        temp[word] = (word_google_twitter_ny[word][x_index], word_google_twitter_ny[word][y_index])
+        
+    scatterPlot = buildScatterPlot(temp)
+    kMeansScatterPlot = buildKMeansScatterPlot(temp, currK)
     
     #curdoc().clear()
     #curdoc().add_root(row(inputs, scatterPlot, kMeansScatterPlot))
+    layout.children[1] = scatterPlot
     layout.children[2] = kMeansScatterPlot
     #layout.children[2] = actualPlot
     
-#def updateXYData():
+def updateXYData():
+    currK = int(k_slider.value)
+    currX = XData_select.value
+    currY = YData_select.value
+    
+    if currX == "Google":
+        x_index = 0
+    elif currX == "Twitter":
+        x_index == 1
+    else:
+        x_index == 2
+        
+    if currY == "Google":
+        y_index = 0
+    elif currY == "Twitter":
+        y_index == 1
+    else:
+        y_index == 2
+    
+    temp = {}
+    for word in word_google_twitter_ny.keys():
+        temp[word] = (word_google_twitter_ny[word][x_index], word_google_twitter_ny[word][x_index])
+    
+    scatterPlot = buildScatterPlot(temp)
+    kMeansScatterPlot = buildKMeansScatterPlot(temp, currK)
+    
+    layout.children[1] = scatterPlot
+    layout.children[2] = kMeansScatterPlot
     
 
 
-k_slider.on_change('value', update_k)
-#XData_select.on_change('value', updateXYData)
-#YData_select.on_change('value', updateXYData)
+k_slider.on_change('value', update)
+XData_select.on_change('value', update)
+YData_select.on_change('value', update)
 
 
 inputs = column(widgetbox(k_slider, XData_select, YData_select))
