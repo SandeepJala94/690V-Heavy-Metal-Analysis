@@ -30,8 +30,7 @@ from bokeh.models import WheelZoomTool
 from bokeh.models import PanTool
 
 
-# In[18]:
-
+# open the happiness scores and heavy metal data
 file  = open("ranking.json", "r")
 text = file.read()
 
@@ -40,20 +39,17 @@ metal = file.read()
 #print(text)
 
 
-# In[19]:
-
+# load the data
 parsed_text = json.loads(text)
 metal_data = json.loads(metal)
 
 
-# In[20]:
-
+# this just prints out the data at index 0
 print(parsed_text['objects'][0])
 print(len(parsed_text['objects']))
 
 
-# In[21]:
-
+# stemStepA an stemStepB executes the rules of the Porter Stemmer
 def stemStepA(word):
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
     
@@ -76,8 +72,7 @@ def stemStepA(word):
     return word    
 
 
-# In[22]:
-
+# looks for the index of the first non-vowel character
 def firstNonVowelIndex(word):
     
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
@@ -92,8 +87,7 @@ def firstNonVowelIndex(word):
     return index
 
 
-# In[23]:
-
+#checks if the root, the sequence of characters before the endingIndex has a vowel
 def rootHasVowel(word, endingIndex):
     
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
@@ -107,8 +101,7 @@ def rootHasVowel(word, endingIndex):
     return False
 
 
-# In[24]:
-
+# this follows the rules of the Porter Stemmer
 def stemStepB(word):
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
     
@@ -212,15 +205,14 @@ def stemStepB(word):
 
 
 # In[25]:
-
+# runs StepA and StepB of the Porter Stemmer
 def stem(word):
     word = stemStepA(word)
     word = stemStepB(word)
     return word
 
 
-# In[26]:
-
+#find all unique words in metal_data
 def findWords(metal_data):
     uniqueWords = []
 
@@ -237,8 +229,7 @@ def findWords(metal_data):
     return uniqueWords
 
 
-# In[27]:
-
+# get the Google, Twitter, and New York Times rank for every word
 def getGoogleTwitterNYRanks(metal_data, parsed_text):
     uniqueWords = findWords(metal_data)
     word_google_twitter_ny = {}
@@ -254,8 +245,8 @@ def getGoogleTwitterNYRanks(metal_data, parsed_text):
 
 
 
-# In[30]:
-
+# build the scatter plot.  The variables are names googleRanks and twitterRanks, but after making the code more flexible
+# these names are meaningless. They simply hold the data at word_google_twitter_ny[word][0] and word_google_twitter_ny[word][1]
 def buildScatterPlot(word_google_twitter_ny):
     googleRanks = []
     twitterRanks = []
@@ -289,8 +280,7 @@ def createPair(word_google_twitter_ny):
 
 
 
-# In[83]:
-
+# build the KMeans Scatter Plot
 def buildKMeansScatterPlot(word_google_twitter_ny, kValue):
     X = createPair(word_google_twitter_ny)
     
@@ -352,7 +342,7 @@ def buildKMeansScatterPlot(word_google_twitter_ny, kValue):
     return p
 
 
-# In[86]:
+# grab the data and create initial plot with k=2 and focusing on Google vs Twitter
 word_google_twitter_ny = getGoogleTwitterNYRanks(metal_data, parsed_text)  
 
 temp = {}
@@ -416,7 +406,7 @@ def update(attrname, old, new):
     layout.children[1] = scatterPlot
     layout.children[2] = kMeansScatterPlot
     
-    
+
 def updateXYData():
     currK = int(k_slider.value)
     currX = XData_select.value
@@ -447,12 +437,12 @@ def updateXYData():
     layout.children[2] = kMeansScatterPlot
     
 
-
+#execute these functions when any inputs are changed
 k_slider.on_change('value', update)
 XData_select.on_change('value', update)
 YData_select.on_change('value', update)
 
-
+# create and display plots in document
 inputs = column(widgetbox(k_slider, XData_select, YData_select))
 layout = row(inputs, scatterPlot, kMeansScatterPlot)
 curdoc().add_root(layout)

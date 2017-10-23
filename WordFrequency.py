@@ -30,31 +30,28 @@ from bokeh.models import WheelZoomTool
 from bokeh.models import PanTool
 
 
-# In[2]:
-
+#read in the heavy metal music and the happiness data from 
 file  = open("ranking.json", "r")
 text = file.read()
 
 file = open("metaldata.json", "r")
 metal = file.read()
-#print(text)
 
 
-# In[3]:
-
+#load the data
 parsed_text = json.loads(text)
 metal_data = json.loads(metal)
 
 
 # In[4]:
-
+#this is just to look at the first 10 words and their ranks
 number = 1
 for i in range(0, 10):
     print(parsed_text['objects'][i]['word'], "\t\t", parsed_text['objects'][i]['rank'])
 
 
 # In[5]:
-
+#stemStepA an stemStepB executes the rules of the Porter Stemmer
 def stemStepA(word):
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
     
@@ -77,8 +74,7 @@ def stemStepA(word):
     return word    
 
 
-# In[6]:
-
+# looks for the index of the first non-vowel character
 def firstNonVowelIndex(word):
     
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
@@ -93,8 +89,7 @@ def firstNonVowelIndex(word):
     return index
 
 
-# In[7]:
-
+#checks if the root, the sequence of characters before the endingIndex has a vowel
 def rootHasVowel(word, endingIndex):
     
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
@@ -108,8 +103,7 @@ def rootHasVowel(word, endingIndex):
     return False
 
 
-# In[8]:
-
+# this follows the rules of the Porter Stemmer
 def stemStepB(word):
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
     
@@ -212,16 +206,14 @@ def stemStepB(word):
     return word
 
 
-# In[9]:
-
+# runs StepA and StepB of the Porter Stemmer
 def stem(word):
     word = stemStepA(word)
     word = stemStepB(word)
     return word
 
 
-# In[10]:
-
+#find all unique words and their # of occurences in metal_data
 def findUniqueWords(metal_data):
     uniqueWords = {}
     words = []
@@ -244,8 +236,7 @@ def findUniqueWords(metal_data):
     return uniqueWords
 
 
-# In[11]:
-
+# builds a bar plot for the words at startingIndex and the number of words after it (1-10)
 def buildWordFrequencyBarPlot(startingIndex, numOfWords, uniqueWords):
     if (startingIndex + numOfWords) <= len(uniqueWords):
         wordsInSet = []
@@ -269,15 +260,13 @@ def buildWordFrequencyBarPlot(startingIndex, numOfWords, uniqueWords):
         return p
 
 
-# In[12]:
-
+# This creates the initial bar plot
 uniqueWords = findUniqueWords(metal_data)
 wordFreqBarPlot = buildWordFrequencyBarPlot(0, 10, uniqueWords)
 endOfSliderNum = len(uniqueWords)-10
 
 
-# In[13]:
-
+# Sliders for starting point and number of words to look after the starting point
 startingPoint_slider = Slider(title="Starting Index",
                          value=0.0,
                          start=1.0,
@@ -293,37 +282,29 @@ numOfWordsLookingAt_slider = Slider(title="Number of words to look after Startin
                          width=200)
 
 
-# In[14]:
-
+# Functionality of clicking on startingPoint_slider
 def updateStartingPoint(attrname, old, new):
-    #curdoc().remove_root(row(inputs, wordFreqBarPlot))
     s = int(startingPoint_slider.value)
     n = int(numOfWordsLookingAt_slider.value)
     wordFreqBarPlot = buildWordFrequencyBarPlot(s, n, uniqueWords)
-    #curdoc().add_root(row(inputs, wordFreqBarPlot))
     layout.children[1] = wordFreqBarPlot
 
 
-# In[15]:
-
+#Functionality of clicking on startingPoint_slider and numOfWordsLookingAt_slider
 def updateNumOfWordsLookingAt(attrname, old, new):
-    #curdoc().remove_root(row(inputs, wordFreqBarPlot))
     s = int(startingPoint_slider.value)
     n = int(numOfWordsLookingAt_slider.value)
     wordFreqBarPlot = buildWordFrequencyBarPlot(s, n, uniqueWords)
-    #curdoc().add_root(row(inputs, wordFreqBarPlot))
     layout.children[1] = wordFreqBarPlot
 
 
 
-# In[16]:
-
+# Execute the corresponding functions when changed
 startingPoint_slider.on_change('value', updateStartingPoint)
 numOfWordsLookingAt_slider.on_change('value', updateNumOfWordsLookingAt)
 
 
-# In[17]:
-
+# sets up and displays the initial bar plot
 inputs = column(widgetbox(startingPoint_slider, numOfWordsLookingAt_slider, sizing_mode="scale_both"))
 layout = row(inputs, wordFreqBarPlot)
 curdoc().add_root(layout)

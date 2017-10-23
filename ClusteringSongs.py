@@ -30,8 +30,7 @@ from bokeh.models import WheelZoomTool
 from bokeh.models import PanTool
 
 
-# In[30]:
-
+# open the happiness scores and heavy metal data
 file  = open("ranking.json", "r")
 text = file.read()
 
@@ -40,21 +39,18 @@ metal = file.read()
 #print(text)
 
 
-# In[31]:
-
+# load the data
 parsed_text = json.loads(text)
 metal_data = json.loads(metal)
 
 
-# In[32]:
-
+#this is just to look at the first 10 words and their ranks
 number = 1
 for i in range(0, 10):
     print(parsed_text['objects'][i]['word'], "\t\t", parsed_text['objects'][i]['rank'])
 
 
-# In[33]:
-
+# stemStepA an stemStepB executes the rules of the Porter Stemmer
 def stemStepA(word):
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
     
@@ -77,8 +73,7 @@ def stemStepA(word):
     return word    
 
 
-# In[34]:
-
+# looks for the index of the first non-vowel character
 def firstNonVowelIndex(word):
     
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
@@ -93,8 +88,7 @@ def firstNonVowelIndex(word):
     return index
 
 
-# In[35]:
-
+#checks if the root, the sequence of characters before the endingIndex has a vowel
 def rootHasVowel(word, endingIndex):
     
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
@@ -108,8 +102,7 @@ def rootHasVowel(word, endingIndex):
     return False
 
 
-# In[36]:
-
+# this follows the rules of the Porter Stemmer
 def stemStepB(word):
     vowels = ['a', 'e', 'i',  'o', 'u', 'y']
     
@@ -212,16 +205,14 @@ def stemStepB(word):
     return word
 
 
-# In[37]:
-
+# runs StepA and StepB of the Porter Stemmer
 def stem(word):
     word = stemStepA(word)
     word = stemStepB(word)
     return word
 
 
-# In[38]:
-
+# #find all unique words in metal_data
 def findUniqueWords(metal_data):
     uniqueWords = []
 
@@ -239,8 +230,7 @@ def findUniqueWords(metal_data):
     return uniqueWords
 
 
-# In[39]:
-
+# creates a dictionary of {dict[song] : {dict[word]:1} }
 def createSongToWordsDict(metal_data):
     songsToWords = {}
     
@@ -264,8 +254,8 @@ def createSongToWordsDict(metal_data):
     return songsToWords                
 
 
-# In[40]:
-
+# goes through songsToWords and returns a list and np.array of the number of occurences of wordX and wordY in all songs
+# if word does not exist, then give value of 0
 def createPair(songsToWords, wordX, wordY):
     pairs = []
     
@@ -288,8 +278,7 @@ def createPair(songsToWords, wordX, wordY):
     return pairs, np.array(pairs)
 
 
-# In[41]:
-
+# finds the number of identical pairs and returns as dictionary
 def findPairCounts(X):
     uniquePairs = {}
     
@@ -302,8 +291,7 @@ def findPairCounts(X):
     return uniquePairs
 
 
-# In[42]:
-
+# build the KMeansPlot
 def buildSongKMeansPlot(songsToWords, wordX, wordY, kValue):
     pairs, X = createPair(songsToWords, wordX, wordY)
     
@@ -357,21 +345,14 @@ def buildSongKMeansPlot(songsToWords, wordX, wordY, kValue):
     return p
 
 
-# In[43]:
-
+# initial set
 uniqueWords = findUniqueWords(metal_data)
 print("len(uniqueWords) = ", len(uniqueWords))
 songsToWords = createSongToWordsDict(metal_data)
 print(len(songsToWords))
 #print(songsToWords)
-
-
-# In[44]:
-
 songKMeansPlot = buildSongKMeansPlot(songsToWords, "every", "death", 2)
 
-
-# In[45]:
 
 #Selections and Sliders
 k_slider = Slider(title="Number of Neighbors",
@@ -393,8 +374,6 @@ YData_select = Select(title = "YData",
                       options = uniqueWords)
 
 
-# In[46]:
-
 #Functionality of Slider
 def update(attrname, old, new):
     currK = int(k_slider.value)
@@ -406,15 +385,13 @@ def update(attrname, old, new):
     layout.children[1] = songKMeansPlot
 
 
-# In[47]:
-
+# execute update() when changed
 k_slider.on_change('value', update)
 XData_select.on_change('value', update)
 YData_select.on_change('value', update)
 
 
-# In[48]:
-
+# create and display original plot in document
 inputs = column(widgetbox(k_slider, XData_select, YData_select))
 layout = row(inputs, songKMeansPlot)
 curdoc().add_root(layout)
