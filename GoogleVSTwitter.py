@@ -290,9 +290,8 @@ def buildKMeansScatterPlot(word_google_twitter_ny, kValue):
     
     hover = HoverTool(
         tooltips=[
-            ("index", "$word[word.keys()[index]]"),
-            ("googleRank", "$x"),
-            ("twitterRank", "$y")
+            ("xRank", "$x"),
+            ("yRank", "$y")
         ]
     )
 
