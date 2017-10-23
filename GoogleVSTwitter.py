@@ -238,7 +238,7 @@ def getGoogleTwitterNYRanks(metal_data, parsed_text):
         for i in range(0, len(parsed_text['objects'])):
             if parsed_text['objects'][i]['word'] == word:
                 if word not in word_google_twitter_ny.keys():
-                    word_google_twitter_ny[word] = (parsed_text['objects'][i]['googleBooksRank'], parsed_text['objects'][i]['twitterRank'], parsed_text['objects'][i]['newYorkTimesRank'])                  
+                    word_google_twitter_ny[word] = (parsed_text['objects'][i]['googleBooksRank'], parsed_text['objects'][i]['twitterRank'], parsed_text['objects'][i]['newYorkTimesRank'], parsed_text['objects'][i]['lyricsRank'])                  
                 
     
     return word_google_twitter_ny
@@ -363,13 +363,13 @@ k_slider = Slider(title="Number of Neighbors",
 XData_select = Select(title = "XData",
                       value = "Google",
                       width=200,
-                      options = ["Google", "Twitter", "New York"])
+                      options = ["Google", "Twitter", "New York", "lyricsRank"])
 
 
 YData_select = Select(title = "YData",
                       value = "Twitter",
                       width=200,
-                      options = ["Google", "Twitter", "New York"])
+                      options = ["Google", "Twitter", "New York", "lyricsRank"])
 
 
 #Functionality of Slider
@@ -384,15 +384,19 @@ def update(attrname, old, new):
         x_index = 0
     elif currX == "Twitter":
         x_index = 1
-    else:
+    elif currX == "New York":
         x_index = 2
+    else:#currX == lyricsRank
+        x_index = 3
         
     if currY == "Google":
         y_index = 0
     elif currY == "Twitter":
         y_index = 1
-    else:
+    elif currY == "New York":
         y_index = 2
+    else:#currY == lyricsRank
+        y_index = 3
         
     temp = {}
     for word in word_google_twitter_ny.keys():
